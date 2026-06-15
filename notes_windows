@@ -1,0 +1,11 @@
+SSDT Hooking
+Hells Hollow
+- alter KTRAP_FRAME 
+
+relevant based on 2009 paper
+- SSDT Hooking
+- IDT Hooking
+- Detour Patching
+- DKOM
+- ADS
+- Registry Hiding * might be good for cyberpat as people are comfortable with this tool

